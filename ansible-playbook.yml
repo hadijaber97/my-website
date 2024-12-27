@@ -3,24 +3,42 @@
   hosts: localhost
   connection: local
   tasks:
-    - name: stop current running container
+    - name: Check if l-container exists
+      command: docker ps -a -q -f "name=l-container"
+      register: l_container_exists
+      ignore_errors: yes
+
+    - name: Stop current running container if exists
       command: docker stop l-container
+      when: l_container_exists.stdout != ""
       ignore_errors: yes
 
-    - name: remove stopped container
+    - name: Remove stopped container if exists
       command: docker rm l-container
+      when: l_container_exists.stdout != ""
       ignore_errors: yes
 
-    - name: remove ansible-image
+    - name: Remove ansible image
       command: docker rmi ansible-img
       ignore_errors: yes
 
-    - name: build docker image using the Dockerfile
+    - name: Build docker image using the Dockerfile
       command: docker build -t ansible-img .
       
-    - name: create tag to image 
-      command: docker tag  ansible-img  hadijaber97/ansible-repo
+    - name: Create tag for image
+      command: docker tag ansible-img hadijaber97/ansible-repo
 
-    - name: run container
-      command: docker run -d --name ansible-container  -p 5000:80 hadijaber97/ansible-repo
+    - name: Check if ansible-container exists
+      command: docker ps -a -q -f "name=ansible-container"
+      register: ansible_container_exists
+      ignore_errors: yes
+
+    - name: Remove existing ansible container if exists
+      command: docker rm -f ansible-container
+      when: ansible_container_exists.stdout != ""
+      ignore_errors: yes
+
+    - name: Run container
+      command: docker run -d --name ansible-container -p 5000:80 hadijaber97/ansible-repo
+
 
